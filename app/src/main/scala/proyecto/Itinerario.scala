@@ -1,47 +1,72 @@
 package proyecto
 
+
 class Itinerario() {
 
-  type aeropuertos = List[Aeropuerto]
-  type vuelos = List[Vuelo]
+  type Aeropuertos = List[Aeropuerto]
+  type Vuelos = List[Vuelo]
 
-  def itinerarios(vuelos: List[Vuelo], aeropuertos:List[Aeropuerto]): (String, String) => List[Itinerario] = {
-    //Recibe una lista de vuelos y aeropuertos
-    //Retorna una función que recibe los codigos de dos aeropuertos
-    //Retorna todos los itinerarios posibles de cod1 a cod2
-    (cod1:String, cod2:String)=> List[Itinerario]()
+  def itinerarios(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[List[Vuelo]] = {
+    (cod1: String, cod2: String) => {
+      def buscarItinerarios(origen: String, destino: String, visitados: Set[String]): List[List[Vuelo]] = {
+        if (origen == destino) List(List())
+        else {
+          vuelos.filter(v => v.Org == origen && !visitados.contains(v.Dst)).flatMap { vuelo =>
+            val itinerariosRestantes = buscarItinerarios(vuelo.Dst, destino, visitados + vuelo.Dst)
+            itinerariosRestantes.map(it => vuelo :: it)
+          }
+        }
+      }
+
+      buscarItinerarios(cod1, cod2, Set())
+    }
   }
 
-  def itinerariosTiempo(vuelos: List[Vuelo], aeropuertos:List[Aeropuerto]): (String, String) => List[Itinerario] = {
-    //Recibe vuelos, una lista de vuelos y aeropuertos, una lista de aeropuertos y retorna una funcion que recibe dos strings y retorna una lista de itinerarios
-    //Devuelve una función que recibe c1 y c2, códigos de aeropuertos
-    //y devuelve una función que devuelve los tres (si los hay) itinerarios que minimizan el tiempo total de viaje
-    (cod1:String, cod2:String)=> List[Itinerario]()
+  def itinerariosTiempo(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[List[Vuelo]] = {
+    (cod1: String, cod2: String) => {
+      val todosItinerarios = itinerarios(vuelos, aeropuertos)(cod1, cod2)
+      todosItinerarios.take(3)
+    }
   }
 
-  def itinerariosEscalas(vuelos:List[Vuelo], aeropuertos:List[Aeropuerto]):(String, String)=>List[Itinerario]
-  = {
-    //Recibe una lista de vuelos y aeropuertos
-    //Retorna una función que recibe los codigos de dos aeropuertos
-    //Retorna todos los tres mejores itinerarios posibles de cod1 a cod2
-    //que minimizan el número de escalas
-    (cod1:String, cod2:String)=> List[Itinerario]()
+  def itinerariosEscalas(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[List[Vuelo]] = {
+    (cod1: String, cod2: String) => {
+      val todosItinerarios = itinerarios(vuelos, aeropuertos)(cod1, cod2)
+      todosItinerarios.sortBy(_.length).take(3)
+    }
   }
 
-  def itinerariosAire(vuelos: List[Vuelo], aeropuertos:List[Aeropuerto]): (String, String) => List[Itinerario] = {
-    //Recibe una lista de vuelos y aeropuertos
-    //Retorna una función que recibe los codigos de dos aeropuertos
-    //Retorna todos los tres mejores itinerarios posibles de cod1 a cod2
-    //que minimizan el tiempo en itinerarios
-    (cod1:String, cod2:String)=> List[Itinerario]()
+  def itinerariosAire(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[List[Vuelo]] = {
+    (cod1: String, cod2: String) => {
+      val todosItinerarios = itinerarios(vuelos, aeropuertos)(cod1, cod2)
+      todosItinerarios.sortBy(calcularTiempoEnAire).take(3)
+    }
   }
 
-  def itinerariosSalida(vuelos: List[Vuelo], aeropuertos:List[Aeropuerto]): (String, String, Int, Int) => List[Itinerario] = {
-    //Recibe una lista de vuelos y aeropuertos
-    //Retorna una función que recibe los codigos de dos aeropuertos y dos enteros, que es la hora de la cita
-    //Retorna todos los tres mejores itinerarios posibles de cod1 a cod2
-    //que permiten llegar a una hora de la cita
-    (cod1:String, cod2:String, HC:Int, MC:Int)=> List[Itinerario]()
+  def calcularTiempoEnAire(itinerario: List[Vuelo]): Int = {
+    itinerario.map { vuelo =>
+      val horaSalidaEnMinutos = vuelo.HS * 60 + vuelo.MS
+      val horaLlegadaEnMinutos = vuelo.HL * 60 + vuelo.ML
+      horaLlegadaEnMinutos - horaSalidaEnMinutos
+    }.sum
   }
 
+
+
+
+  def itinerariosSalida(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String, Int, Int) => List[List[Vuelo]] = {
+    (cod1: String, cod2: String, HC: Int, MC: Int) => {
+      val todosItinerarios = itinerarios(vuelos, aeropuertos)(cod1, cod2)
+      todosItinerarios.filter(it => cumpleHoraSalida(it, HC, MC))
+        .sortBy(it => it.head.HS * 60 + it.head.MS).take(3)
+    }
+  }
+
+  def cumpleHoraSalida(itinerario: List[Vuelo], HC: Int, MC: Int): Boolean = {
+    val horaCitaEnMinutos = HC * 60 + MC
+    itinerario.headOption match {
+      case Some(primerVuelo) => primerVuelo.HS * 60 + primerVuelo.MS <= horaCitaEnMinutos
+      case None => false
+    }
+  }
 }
