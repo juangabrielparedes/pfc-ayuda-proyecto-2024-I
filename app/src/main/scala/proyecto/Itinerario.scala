@@ -25,7 +25,7 @@ class Itinerario() {
   def itinerariosTiempo(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[List[Vuelo]] = {
     (cod1: String, cod2: String) => {
       val todosItinerarios = itinerarios(vuelos, aeropuertos)(cod1, cod2)
-      todosItinerarios.take(3)
+      todosItinerarios.sortBy(calcularTiempoEnAire(vuelos)).take(3)
     }
   }
 
@@ -39,11 +39,11 @@ class Itinerario() {
   def itinerariosAire(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String) => List[List[Vuelo]] = {
     (cod1: String, cod2: String) => {
       val todosItinerarios = itinerarios(vuelos, aeropuertos)(cod1, cod2)
-      todosItinerarios.sortBy(calcularTiempoEnAire).take(3)
+      todosItinerarios.sortBy(calcularTiempoEnAire(vuelos)).take(3)
     }
   }
 
-  def calcularTiempoEnAire(itinerario: List[Vuelo]): Int = {
+  def calcularTiempoEnAire(vuelos: List[Vuelo])(itinerario: List[Vuelo]): Int = {
     itinerario.map { vuelo =>
       val horaSalidaEnMinutos = vuelo.HS * 60 + vuelo.MS
       val horaLlegadaEnMinutos = vuelo.HL * 60 + vuelo.ML
@@ -51,16 +51,13 @@ class Itinerario() {
     }.sum
   }
 
-
-
-
   def itinerariosSalida(vuelos: List[Vuelo], aeropuertos: List[Aeropuerto]): (String, String, Int, Int) => List[List[Vuelo]] = {
     (cod1: String, cod2: String, HC: Int, MC: Int) => {
       val todosItinerarios = itinerarios(vuelos, aeropuertos)(cod1, cod2)
-      todosItinerarios.filter(it => cumpleHoraSalida(it, HC, MC))
-        .sortBy(it => it.head.HS * 60 + it.head.MS).take(3)
+      todosItinerarios.filter(it => cumpleHoraSalida(it, HC, MC)).sortBy(it => it.head.HS * 60 + it.head.MS).take(3)
     }
   }
+
 
   def cumpleHoraSalida(itinerario: List[Vuelo], HC: Int, MC: Int): Boolean = {
     val horaCitaEnMinutos = HC * 60 + MC
